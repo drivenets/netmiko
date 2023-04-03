@@ -187,11 +187,15 @@ class DnosSSH(BaseConnection):
         else:
             return prompt
 
-    def _enter_shell(self) -> str:
-        """Enter the Bourne Shell of the routing-engine container on the
-        active NCC"""
+    def _enter_shell(self,ncm=None, ncc:int=0) -> str:
+        """Enter the Bourne Shell of the routing-engine container on the active NCC or provided NCM(A0,B0..)"""
 
-        cmd: str = "run start shell ncc active"
+        cmd: str = f"run start shell ncc {ncc}"
+        read_pattern=self.root_prompt
+        if ncm:
+            cmd: str =f"run start shell ncm {ncm}"
+            read_pattern = self.ncm_prompt
+
         output: str = ""
         pattern: str = "ssword"
         msg = "Failed to enter the shell mode"
@@ -203,15 +207,13 @@ class DnosSSH(BaseConnection):
         if re.search(pattern, output, flags=re_flags):
             self.write_channel(self.normalize_cmd(str(self.password)))
             try:
-                output += self.read_until_pattern(pattern=rf"{self.root_prompt}")
+                output += self.read_until_pattern(pattern=rf"{read_pattern}")
             except ReadTimeout:
                 raise ValueError(msg)
         # Nature of prompt will change after logging to the shell
-        # setting the alt terminator to `:` as we remove the # while looking
-        # for prompt in `find_prompt`
-        # the hash is removed to make sure send_command method can find the
-        # end of the command while in shell mode
-        self.set_base_prompt(pattern=rf"{self.root_prompt}", alt_prompt_terminator=":")
+        # setting the alt terminator to `:` as we remove the # while looking for prompt in `find_prompt`
+        # the hash is removed to make sure send_command method can find the end of the command while in shell mode
+        self.set_base_prompt(pattern=rf"{read_pattern}", alt_prompt_terminator=":")
         return output
 
     def _return_cli(self) -> str:
