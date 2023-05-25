@@ -191,6 +191,11 @@ class DnosSSH(BaseConnection):
     def _enter_shell(self,ncm=None, ncc="active") -> str:
         """Enter the Bourne Shell of the routing-engine container on the active NCC or specific NCC(0 or 1) or provided NCM(A0,B0..)"""
 
+        if ncm and ncm not in ["A0","A1","B0","B1"]:
+            raise ValueError("NCM does not have one of the expected values. A0, B0, A1, B1 are expected values. ")
+        if not ncc in [0,1,"active"]:
+            raise ValueError("NCC does not have one of the expected values. 0, 1 or \"active\" are expected values ")
+
         cmd: str = f"run start shell ncc {ncc}"
         read_pattern=self.root_prompt
         if ncm:
