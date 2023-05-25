@@ -11,6 +11,7 @@ class DnosSSH(BaseConnection):
 
     exec_prompt = r"[$>#]"
     root_prompt = r"(?m:]#\s*$)"
+    ncm_prompt = r"[A-Z]{3}\d{4}[A-Z]{4}#.$"
 
     def session_preparation(self) -> None:
         """Prepare the session after the connection has been established."""
@@ -187,11 +188,15 @@ class DnosSSH(BaseConnection):
         else:
             return prompt
 
-    def _enter_shell(self) -> str:
-        """Enter the Bourne Shell of the routing-engine container on the
-        active NCC"""
+    def _enter_shell(self,ncm=None, ncc="active") -> str:
+        """Enter the Bourne Shell of the routing-engine container on the active NCC or specific NCC(0 or 1) or provided NCM(A0,B0..)"""
 
-        cmd: str = "run start shell ncc active"
+        cmd: str = f"run start shell ncc {ncc}"
+        read_pattern=self.root_prompt
+        if ncm:
+            cmd: str =f"run start shell ncm {ncm}"
+            read_pattern = self.ncm_prompt
+
         output: str = ""
         pattern: str = "ssword"
         msg = "Failed to enter the shell mode"
