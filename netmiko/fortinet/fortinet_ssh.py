@@ -148,12 +148,21 @@ Alternatively you can try configuring 'configure system console -> set output st
         if self._vdoms:
             self._config_global()
 
-        self._send_command_str(
+        check_permission = self._send_command_str(
             "config system console", expect_string=self.prompt_pattern
         )
-        output = self._send_command_str(
-            "show full-configuration", expect_string=self.prompt_pattern
-        )
+        # If the user does not have a config global permission 'config system console' command
+        # coud not be executed and will generate Unknow action output. When the system did not
+        # enter the config mode because of prompt_pattern full config output could not be
+        # collected. To prevent this prompt pattern will not be used if the user does not have
+        # config permission https://github.com/ktbyers/netmiko/blob/
+        # 5f9eaa9e54401a758375574c656655e44bee3746/netmiko/base_connection.py#L1641
+        if "Unknown action" in check_permission:
+            output = self._send_command_str("show full-configuration")
+        else:
+            output = self._send_command_str(
+                "show full-configuration", expect_string=self.prompt_pattern
+            )
         self._send_command_str("end", expect_string=self.prompt_pattern)
 
         if self._vdoms:
